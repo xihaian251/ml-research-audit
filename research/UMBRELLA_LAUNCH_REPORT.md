@@ -7,9 +7,9 @@ Every number below was measured on this machine against public infrastructure, o
 file that records such a measurement. Where the round changed a position because evidence contradicted
 it, that is stated rather than smoothed over.
 
-The authoritative answer to "what is the final commit" is `git log -1 --format=%H` on `main`. This
-file is added by the launch round's last commit, so it cannot contain its own SHA; the state that CI
-verified before publication was `71836efb`.
+The authoritative answer to "what is the final commit" is `git log -1 --format=%H` on `main`. This file
+is carried by the launch round's last commit, so it cannot contain its own SHA; the commits CI verified
+green during publication were `71836efb` (the audit fix pass) and `e44a1096` (this report).
 
 ## 1. Project identity
 
@@ -49,7 +49,7 @@ PD001–PD007, each measured from the installed CLI. Full source-authority trail
 
 ## 3. Repository structure
 
-33 tracked files, 19 of them Markdown, 9 YAML.
+34 tracked files, 20 of them Markdown, 9 YAML.
 
 ```
 README.md  LICENSE  CONTRIBUTING.md  CODE_OF_CONDUCT.md  SECURITY.md
@@ -142,17 +142,18 @@ Two labels were created to match the `onboarding-case` form, which references `o
 
 ## 8. CI
 
-`.github/workflows/portal-checks.yml`, five jobs, all measured rather than assumed:
+`.github/workflows/portal-checks.yml`, four jobs, all measured rather than assumed:
 
 | Job | Checks |
 | --- | --- |
 | stack metadata × Python 3.11 / 3.12 / 3.13 | `verify_stack.py` (structure, invariants, file set, publication wording), every YAML parses and issue forms are well-formed, all four components appear in `.github/` |
 | versions still match PyPI | offline gate, then `--online` against the PyPI JSON API |
 
-First run on the pushed default branch: `36581488894`, completed, `success`, every step in all five
-jobs green, read job by job rather than by the run conclusion. The workflow is offline by default so a
-PyPI outage cannot make the portal look broken, and a daily scheduled run re-measures versions; drift
-there means the census is stale, and the script says exactly that instead of guessing.
+Two runs measured, one per pushed commit: `36581488894` on `71836efb`, and `36582654941` on
+`e44a1096`. Both completed with `success`, and each of the four jobs was read step by step rather than
+trusted at the run conclusion — 38 steps, 38 green. The workflow is offline by default so a PyPI outage
+cannot make the portal look broken, and a daily scheduled run re-measures versions; drift there means
+the census is stale, and the script says exactly that instead of guessing.
 
 ## 9. Fresh-user audit
 
@@ -246,14 +247,16 @@ All shipped in this round unless marked recorded.
 
 ## 16. What the round cost, and what it did not do
 
-Eight commits on `main`, history linear: four built the portal (census and metadata, documentation and
+Nine commits on `main`, history linear: four built the portal (census and metadata, documentation and
 the TabM trace, community surface, CI), then the census addendum, the documentation fix pass, the audit
-record, and this report. No force push, no rewrite, no micro-commit per file.
+record, this report, and one correction to this report — it said "five jobs" and "33 files" before the
+run was read job by job and the tree was counted after the report was added. No force push, no rewrite,
+no micro-commit per file.
 
 The round added no rule, no adapter, no fifth tool, no global score, no paper verdict, no misconduct
 detector, no language model acting as a judge of evidence, and no claim that the stack proves a paper
-true. It also did not start a development phase; §43's list of what comes next is community work, not
-engineering work.
+true. It also did not start a development phase; what comes next is community work, not engineering
+work.
 
 ## 17. Next step, uniquely
 
