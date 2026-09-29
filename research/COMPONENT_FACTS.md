@@ -173,19 +173,22 @@ Source authority, highest first, as used throughout:
 
 ## 4. README staleness register
 
-Two README/CLI texts conflict with the authoritative sources. Per the task's read-only rule for
-child repositories, **neither was edited in this round.** The umbrella documentation must use the
-PyPI/GitHub values above, not these strings.
+Every entry below is a README/CLI text that conflicts with an authoritative source. Per the
+read-only rule for child repositories, **none was edited in this round.** The umbrella
+documentation must use the PyPI/GitHub values above, not these strings.
 
 | # | Where | The stale statement | The measured reality | Authority used | Action taken |
 | --- | --- | --- | --- | --- | --- |
 | S1 | `result-doctor` `README.md:18` | "The package is not published to PyPI, so `pip install result-doctor` will not find it." | `result-doctor 0.1.0` has been on PyPI since 2026-09-28T13:49:01Z | PyPI JSON API | Recorded here; README left untouched; umbrella quickstart uses `pip install result-doctor` |
 | S2 | `experiment-doctor` `--help` (shipped in the 1.0.0 wheel) | "Experiment Doctor **v0.1**: audit the provenance…" | installed distribution is `experiment-doctor 1.0.0` | PyPI JSON + wheel `METADATA` | Recorded here; not a scientific defect; umbrella text says "1.0.0" and never quotes that help line as a version source |
 | S3 | `experiment-doctor` `README.md:38` | `pip install experiment-doctor # after PyPI publication` | published 2026-09-27 | PyPI JSON | Cosmetic ordering of a comment; recorded, no action |
+| S4 | `paper-doctor` `README.md:380` (identical at tag `v0.1.0` and at `HEAD`) | `result-doctor audit <run-dir> --json > findings.json` | `--json` takes a value, so this is a usage error: exit `2`, stderr `argument --json: expected one argument`, and the shell leaves a **0-byte** `findings.json`. The working form is `result-doctor audit <run-dir> --json findings.json`, which re-measured at exit `0` with a 4,263-byte report | clean venv with the four released wheels, `result-doctor` 0.1.0, 2026-09-29 | **This is the cross-layer bridge command in the frozen component's own quick path.** Recorded, child repo not edited. The portal's copy in `docs/end-to-end-tabm.md` step 2 was fixed to the `--json <file>` form, and `docs/quickstart.md` states the form explicitly |
 
-S1 is the only one that would actively stop a reader from installing the tool. It is the reason the
-quickstart in this repository states install commands from measured PyPI data rather than from the
-child READMEs.
+S1 is the staleness item that would actively stop a reader from installing a tool. S4 is the item
+that would actively stop a reader from bridging one layer into the next: the command fails, and
+because the failure mode is a shell redirect rather than a tool crash, it fails *silently into an
+empty file* that the next tool then rejects. Both are the reason the umbrella documentation states
+commands from measured execution rather than from the child READMEs.
 
 ## 5. Citation identity — no authoritative convention exists
 
@@ -210,3 +213,91 @@ that contradicts this file; if a value changes, this census is re-run and `stack
 regenerated from it by `scripts/verify_stack.py`.
 
 **Census status: CLOSED 2026-09-29.** Public umbrella documentation work may begin.
+
+## 7. Addendum, 2026-09-29 (after census closure) — facts measured during the fresh-user proxy round
+
+These do not reopen §1-§6: no version, package name, CLI name, Python floor, license or release
+fact changed. They are behaviours the census did not exercise, measured by running the released
+wheels in a clean virtual environment. S4 in §4 was found the same way.
+
+### 7.1 Dataset Doctor's exit-code ladder, measured
+
+`dataset-doctor-audit audit` does not share the Result Doctor / Paper Doctor contract. Its own
+`--help` documents, and a synthetic 300-row split with a planted `patient_id` leak reproduced
+(2026-09-29):
+
+| Exit code | Condition observed |
+| --- | --- |
+| `0` | audit completed with no blocking finding |
+| `1` | audit completed **and** a finding is blocking; the leak case printed `FORMAL_EVAL_INVALID` and exited `1` |
+| `2` | configuration, usage, or I-O error |
+| `3` | internal error |
+| `130` | interrupted |
+
+Two further discriminations, measured the same day against the shipped fixtures, because they are the
+ones a reader will otherwise get wrong:
+
+| Command | Printed verdict | Exit code |
+| --- | --- | --- |
+| `dataset-doctor-audit audit <fixture with planted leaks>` | `FORMAL_EVAL_INVALID 316 samples / 21 rules` | `1` |
+| `dataset-doctor-audit audit <shipped control fixture>` | `FORMAL_EVAL_SAFE 300 samples / 21 rules` | `0` |
+| `dataset-doctor-audit demo` (which audits both of the above internally) | prints `FORMAL_EVAL_INVALID` for the leaking fixture | `0` |
+
+The third row is the trap: the demo subcommand reports blocking findings and still exits `0`, so a
+reader who learned the exit-code contract from the demo has learned the wrong contract for `audit`.
+`docs/quickstart.md` now shows all three rows.
+
+Ladder flags, read from the tool's own option help: `--ci` = "Fail on medium-and-worse findings",
+`--strict` = "Everything --ci fails on, plus rules that could not conclude", and `--fail-on` takes
+`never|low|medium|high|…`.
+
+**Why this matters for the portal wording.** §5 of `docs/status-semantics.md` says a `FAIL` never
+controls the exit code for Result Doctor and Paper Doctor. It does for Dataset Doctor. So the
+umbrella's "no global score" position needs its exact scope: Dataset Doctor does print a one-word
+aggregate gate (`FORMAL_EVAL_SAFE` / `RISKY` / `INVALID` / `INCONCLUSIVE`) and does gate a build on
+it, while Result Doctor and Paper Doctor print status counts and refuse any aggregate. The portal
+README now scopes the claim that way instead of stating it uniformly for four tools.
+
+### 7.2 A minimal Result Doctor manifest, verified runnable
+
+`examples/minimal-result-manifest/` was written by running it, not by transcription:
+
+| Variant | Measured outcome |
+| --- | --- |
+| `result-doctor.yml` | exit `0`; `PASS: 3`, `FAIL: 0`, `INCONCLUSIVE: 0`, `NOT_APPLICABLE: 2`, `NOT_RUN: 3` (RD004/RD007/RD008 unrun because no candidate set, comparison set, or key was supplied) |
+| `result-doctor.noscale.yml` | exit `0`; `RD001 FAIL` - the reported cell is the unscaled metric while the pipeline's final step is the scale |
+
+The `NOT_RUN` trio in the passing variant is the point of the example: a hand-written manifest that
+audits cleanly is auditing *three* rules, not eight, and the report says so.
+
+### 7.3 Three proxy-round claims examined and rejected
+
+Recorded so that a future round does not re-report them as defects.
+
+| Claim | Measurement | Verdict |
+| --- | --- | --- |
+| "`experiment-doctor init` has no `--force`" | `experiment-doctor init --help` lists `--force` | REJECTED |
+| "`experiment-doctor` `--config` rejects `.toml`" | a real TabM `.toml` passed to `--config`; the capture recorded `config_files = CONFIRMED` | REJECTED |
+| "the Paper Doctor README states a 98-line manifest where 105 lines exist" | 105 raw / 98 content lines once the fence and blank lines are excluded - a counting-basis difference, not an inconsistency | REJECTED as a defect |
+
+Nothing rejected here was published anywhere in the portal.
+
+### 7.4 Experiment Doctor CLI behaviour, measured against the 1.0.0 wheel
+
+`experiment-doctor audit` was run on a real capture (1 run, 20 findings, 6 rules, 2 of them
+`INCONCLUSIVE`):
+
+| Command shape | Measured |
+| --- | --- |
+| `audit <bundle>` (findings present, none failing) | exit `0`, prints `rule_fail=0 rule_inconclusive=2`, writes `report.json` + `report.md` under `-o` (default `experiment-doctor-report`) |
+| `audit <nonexistent path>` | exit `2`, `Invalid value for 'path'` |
+| `audit <bundle> --config <file>.toml` | accepted; the capture records `config_files = CONFIRMED` |
+| `audit --help` | no `--version` flag anywhere in the CLI; `-o <path>` is the report directory |
+| `--adapter <unknown name>` | exit `1` with a bare `KeyError` traceback, listing the adapters that do exist: `generic, gmmvi-exp3, torchssl, crda, captured` |
+
+The last row is a pre-release polish item in the component, not a portal defect: an unknown adapter
+name should be a `2`-class usage error with a readable message rather than a traceback. It is
+recorded here and in `STACK_STATUS.md`; the portal does not edit the child repository.
+
+`--reported-table` is the flag that moves an audit past the honest no-op: without it the
+reported-versus-recomputed comparison "stays UNKNOWN", which is what the tool's own `--help` says.
