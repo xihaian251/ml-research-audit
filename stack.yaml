@@ -1,0 +1,122 @@
+# Ecosystem metadata for the ML Research Audit portal.
+#
+# This file is NOT a runtime scientific schema and defines no cross-tool contract.
+# Every value below is a measurement recorded with its source in
+# research/COMPONENT_FACTS.md. Change a release -> re-run the census -> regenerate this.
+
+schema_version: 1
+
+project:
+  name: ML Research Audit
+  tagline: End-to-end provenance auditing for machine-learning research.
+  repository: https://github.com/xihaian251/ml-research-audit
+  # No PyPI distribution for the umbrella. Deliberate: see ROADMAP.md "Not planned without evidence".
+  pypi: null
+  license: Apache-2.0
+  measured_on: "2026-09-29"
+
+components:
+  dataset_doctor:
+    display_name: Dataset Doctor
+    layer: dataset
+    repository: https://github.com/xihaian251/dataset-doctor
+    default_branch: main
+    pypi: dataset-doctor-audit
+    version: 0.1.2
+    cli: dataset-doctor-audit
+    python_requires: ">=3.11"
+    license: Apache-2.0
+    rules: DD001-DD021
+    responsibility: What data entered the evaluation, and does the evaluation boundary hold?
+    status: released
+    release_tag: v0.1.2
+    release_commit: 107504ed7d2f0caffea9dbc28ec25225a532fdb0
+    cross_platform_ci_verified: true
+    # The PyPI name dataset-doctor belongs to an unrelated project. The install name is
+    # dataset-doctor-audit. Recorded in research/COMPONENT_FACTS.md section 2.
+    pypi_name_collision: dataset-doctor
+    known_documentation_defects: []
+
+  experiment_doctor:
+    display_name: Experiment Doctor
+    layer: experiment
+    repository: https://github.com/xihaian251/experiment-doctor
+    default_branch: master
+    pypi: experiment-doctor
+    version: 1.0.0
+    cli: experiment-doctor
+    python_requires: ">=3.11"
+    license: Apache-2.0
+    rules: ED001-ED010
+    responsibility: How did a run come to exist - seed, configuration, code revision, environment?
+    status: released
+    release_tag: v1.0.0
+    release_commit: fb3a24200a56724816906018a60c4a54b6149ab1
+    cross_platform_ci_verified: false
+    pypi_name_collision: null
+    known_documentation_defects:
+      - "Shipped `--help` string says v0.1 while the published distribution is 1.0.0."
+
+  result_doctor:
+    display_name: Result Doctor
+    layer: result
+    repository: https://github.com/xihaian251/result-doctor
+    default_branch: main
+    pypi: result-doctor
+    version: 0.1.0
+    cli: result-doctor
+    python_requires: ">=3.11"
+    license: Apache-2.0
+    rules: RD001-RD008
+    responsibility: How did runs become a reported result - aggregation, membership, selection, transformation?
+    status: released
+    release_tag: v0.1.0
+    release_commit: bec3ab98e5289d4739d57c34413a7a4d2b687da0
+    cross_platform_ci_verified: false
+    pypi_name_collision: null
+    known_documentation_defects:
+      - "README says the package is not published to PyPI; it has been since 2026-09-28."
+
+  paper_doctor:
+    display_name: Paper Doctor
+    layer: paper
+    repository: https://github.com/xihaian251/paper-doctor
+    default_branch: main
+    pypi: paper-doctor
+    version: 0.1.0
+    cli: paper-doctor
+    python_requires: ">=3.11"
+    license: Apache-2.0
+    rules: PD001-PD007
+    responsibility: Does a paper claim faithfully represent the reported evidence it explicitly points to?
+    status: released
+    release_tag: v0.1.0
+    release_commit: 2a02698637f35bd3fec28d98a8b6e272b8e1fc9a
+    cross_platform_ci_verified: true
+    pypi_name_collision: null
+    known_documentation_defects: []
+
+chain:
+  - dataset
+  - experiment
+  - result
+  - paper
+
+principles:
+  no_global_score: true
+  no_paper_verdict: true
+  no_misconduct_verdict: true
+  no_llm_judge: true
+  unknown_over_inference: true
+  inconclusive_is_not_failure: true
+  certainty_does_not_increase_across_layers: true
+  declares_provenance_not_truth: true
+
+status_model:
+  released_components: 4
+  # Paper Doctor phase 3 brief section 15 (a real human first-use test) is recorded NOT OBSERVED.
+  # An agent-driven onboarding simulation was observed; it is not human onboarding.
+  human_onboarding_observed: false
+  independent_external_users_observed: 0
+  end_to_end_public_acceptance_runs: 1
+  end_to_end_acceptance_target: "TabM (arXiv:2410.24210), yandex-research/tabm commit 28e47ae301c92ec37787dde1ce923a0793f405b4"
