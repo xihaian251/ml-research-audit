@@ -75,6 +75,7 @@ PORTAL_FILES = (
     "examples/minimal-result-manifest/README.md",
     "research/COMPONENT_FACTS.md",
     "research/FRESH_USER_AUDIT.md",
+    "research/UMBRELLA_LAUNCH_REPORT.md",
     "scripts/verify_stack.py",
     ".github/ISSUE_TEMPLATE/bug.yml",
     ".github/ISSUE_TEMPLATE/documentation.yml",
