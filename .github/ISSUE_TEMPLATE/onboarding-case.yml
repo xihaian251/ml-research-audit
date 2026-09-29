@@ -1,0 +1,97 @@
+name: External onboarding report / case study
+description: You tried the stack on your own project or paper and are reporting what happened — including where you got stuck. This is the highest-value issue type in this repository.
+title: "[onboarding] "
+labels: ["onboarding", "case study"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The stack currently has **zero observed independent users** and **no real human first-use test
+        on record**. Every honest report of this kind is more useful than a new feature.
+        Reports that say "I could not get past step 2" are accepted and prioritised.
+        You do not need a positive result to file one.
+  - type: textarea
+    id: target
+    attributes:
+      label: What you audited
+      description: Your own project, or a public paper and its released code. Say whether anything you audited is private, and do not paste private content.
+      placeholder: |
+        My own project (private), a paper submission of mine (private),
+        or a public paper: title + arXiv id + code repo @ commit
+    validations:
+      required: true
+  - type: dropdown
+    id: depth
+    attributes:
+      label: How far you got
+      description: The chain is data -> run -> reported result -> paper claim. Stopping early is a legitimate outcome; which layer you stopped at is exactly the measurement being collected.
+      options:
+        - Dataset Doctor only
+        - reached Experiment Doctor
+        - reached Result Doctor
+        - reached Paper Doctor (full chain)
+        - could not complete any layer
+      default: 0
+    validations:
+      required: true
+  - type: textarea
+    id: commands
+    attributes:
+      label: Every command you ran, in order
+      description: Paste them as run, with what each printed. If you abandoned a route, keep it in — a command that made no sense is a finding about the docs.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: friction
+    attributes:
+      label: Where you hesitated, guessed, or re-read a sentence twice
+      description: Be specific about the moment, not the conclusion. "The manifest rejected my input and I did not know which field" is a finding. "The docs are bad" is not.
+    validations:
+      required: true
+  - type: textarea
+    id: status-mix
+    attributes:
+      label: What the tools returned
+      description: The counts per status if you have them, and any finding you believe is wrong. Record INCONCLUSIVE and UNKNOWN as outcomes, not as errors — they are the vocabulary these tools use for "the evidence does not decide".
+      placeholder: |
+        paper-doctor: 10 PASS, 2 FAIL, 5 INCONCLUSIVE, 14 NOT_APPLICABLE, 1 NOT_RUN
+        I believe PD00x FAIL c7 is a parser artefact because ...
+    validations:
+      required: true
+  - type: textarea
+    id: false-reads
+    attributes:
+      label: Anything you initially misread
+      description: Did you expect a global score, a paper verdict, or a reproducibility judgement? Did any status name mislead you? What did you assume before the docs corrected you? This section drives the wording of the status semantics docs.
+    validations:
+      required: true
+  - type: textarea
+    id: would-have-helped
+    attributes:
+      label: What would have saved you time
+      description: A worked example, a validator, a sentence in the right place. Say what you needed, not what you would like the tool to become — requests for a trust score or a fraud verdict will be closed with a link to the design docs.
+    validations:
+      required: true
+  - type: dropdown
+    id: consent
+    attributes:
+      label: May this report be linked from the portal as an external case study?
+      options:
+        - Yes, publish it as is
+        - Yes, after I redact things
+        - No, internal tracking only
+      default: 1
+    validations:
+      required: true
+  - type: checkboxes
+    id: honesty
+    attributes:
+      label: Confirm
+      options:
+        - label: I am reporting what actually happened, including failures and abandoned attempts
+          required: true
+        - label: I have not hidden a step that made me look unfamiliar with the tool
+          required: true
+        - label: I redacted private code, data, and unpublished results
+          required: true

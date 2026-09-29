@@ -1,0 +1,19 @@
+# Portal issue configuration. Component bugs belong in the component repositories;
+# this file exists so a visitor can be routed in one click instead of guessing.
+contact_links:
+  - name: Dataset Doctor issues
+    url: https://github.com/xihaian251/dataset-doctor/issues/new
+    about: Data-layer bugs - fingerprinting, snapshots, the DD001-DD021 rules, dataset manifests.
+  - name: Experiment Doctor issues
+    url: https://github.com/xihaian251/experiment-doctor/issues/new
+    about: Run and code-layer bugs - run capture, provenance status, the ED001-ED010 rules, adapters.
+  - name: Result Doctor issues
+    url: https://github.com/xihaian251/result-doctor/issues/new
+    about: Reported-result-layer bugs - result contracts, the RD001-RD008 rules, evidence grades.
+  - name: Paper Doctor issues
+    url: https://github.com/xihaian251/paper-doctor/issues/new
+    about: Paper-claim-layer bugs - claim-to-evidence manifests, the PD001-PD007 rules, the findings registry.
+  - name: Design boundaries
+    url: https://github.com/xihaian251/ml-research-audit/blob/main/docs/architecture.md
+    about: What the stack deliberately does not do - no cross-layer inference, no global score, no paper verdict.
+blank_issues_enabled: false

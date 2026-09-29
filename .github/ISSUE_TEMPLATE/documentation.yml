@@ -1,0 +1,77 @@
+name: Documentation issue
+description: A statement in this portal or a component's docs that is wrong, stale, ambiguous, or unreadable to someone who did not write it.
+title: "[docs] "
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Documentation defects are treated as first-class bugs in this project. Several are already
+        recorded in [`STACK_STATUS.md`](https://github.com/xihaian251/ml-research-audit/blob/main/STACK_STATUS.md)
+        — check there first so you do not report a known one; if it is listed and you still hit it,
+        say so, because "a stranger tripped on this" is new evidence.
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where is the text
+      options:
+        - portal README.md
+        - portal docs/
+        - portal STACK_STATUS / ROADMAP / CONTRIBUTING / SECURITY / CODE_OF_CONDUCT
+        - stack.yaml
+        - examples/tabm-chain
+        - dataset-doctor README or docs
+        - experiment-doctor README or docs
+        - result-doctor README or docs
+        - paper-doctor README or docs
+      default: 0
+    validations:
+      required: true
+  - type: input
+    id: location
+    attributes:
+      label: Exact location
+      description: File and line, or the URL and the heading. "Somewhere in the quickstart" is not actionable.
+      placeholder: docs/quickstart.md, "Result Doctor" section, third bullet
+    validations:
+      required: true
+  - type: textarea
+    id: quote
+    attributes:
+      label: The sentence as written
+      description: Paste it verbatim. Do not paraphrase the text you are criticising.
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of defect
+      description: Pick the one that fits best. "Overclaim" means the text asserts more than the evidence supports.
+      options:
+        - factually wrong (version, command, path, output)
+        - stale (true at an earlier release, false now)
+        - overclaim (asserts more than the evidence shows)
+        - ambiguous or unreadable
+        - missing (the docs never cover it)
+        - broken link or dead reference
+      default: 0
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: How you know
+      description: The command you ran and what it actually printed, the release page, the PyPI entry, or the source line. A claim that the docs are wrong needs the same evidence discipline as a claim that code is wrong.
+      placeholder: |
+        The README says `result-doctor` is unpublished. It is on PyPI:
+        $ pip index versions result-doctor
+        0.1.0
+    validations:
+      required: true
+  - type: textarea
+    id: correction
+    attributes:
+      label: Proposed wording
+      description: Optional, but a concrete replacement gets merged faster. Do not soften a limitation in order to make the project read better — limitations are documentation, not marketing.
+    validations:
+      required: false

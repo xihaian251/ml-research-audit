@@ -1,0 +1,77 @@
+name: Feature request
+description: A change to a tool or to the portal. The bar is evidence of a real user problem, not a good idea.
+title: "[feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Read [ROADMAP.md](https://github.com/xihaian251/ml-research-audit/blob/main/ROADMAP.md) first.
+        Most plausible-sounding additions are already listed under "Not planned without evidence", and
+        the reason is usually a design boundary rather than a lack of interest. Proposals that cannot
+        name a person who needs them and an artifact that proves the need will be closed as documentation.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What real user problem does this solve?
+      description: The failure you hit, in the past tense, with the command that produced it. Not "users would benefit from X" — what happened to you or to someone you can point to.
+    validations:
+      required: true
+  - type: dropdown
+    id: owner
+    attributes:
+      label: Which Doctor owns it
+      description: If you believe it belongs to none of the four, that is an argument about architecture, not a feature — say so in the last field and open it as a discussion instead.
+      options:
+        - Dataset Doctor (data layer)
+        - Experiment Doctor (run / code layer)
+        - Result Doctor (reported result layer)
+        - Paper Doctor (paper claim layer)
+        - The portal (docs, routing, metadata, verify_stack.py)
+        - None of these — it is an architecture question
+      default: 0
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: What evidence shows the need?
+      description: An issue link, a case study, a reproducible dead end, a command sequence that had to be written by hand, a number of people who hit it. "Several papers do this" is a hypothesis unless you can point at the papers.
+    validations:
+      required: true
+  - type: textarea
+    id: already-expressible
+    attributes:
+      label: Can the problem already be represented as UNKNOWN or INCONCLUSIVE?
+      description: |
+        This is the question that kills most requests here, and it is asked deliberately.
+        The tools record absence of evidence as a status rather than as a failure, and they do not
+        infer across layers. If the state you want recorded already has a name in the status model —
+        UNKNOWN, NOT_RUN, NOT_APPLICABLE, INCONCLUSIVE, DECLARED_ONLY, UNRECOVERABLE — then the gap is
+        usually in the documentation or in your manifest, not in the engine.
+        Say which status you tried and what it gave you.
+    validations:
+      required: true
+  - type: textarea
+    id: boundary-check
+    attributes:
+      label: Does this request cross a design boundary?
+      description: |
+        Check your proposal against these and answer honestly; a "yes" is not disqualifying on its own,
+        but it changes what kind of discussion the issue needs:
+        - produces a single score for a whole audit or a whole paper
+        - decides that a paper is correct, reproducible, or acceptable
+        - labels work as misconduct or fraud
+        - has a language model act as the judge of evidence
+        - promotes an inferred relation into a confirmed one
+        - re-audits another layer's findings instead of consuming its declared registry
+      placeholder: Which bullet applies, or "none".
+    validations:
+      required: true
+  - type: textarea
+    id: cost
+    attributes:
+      label: What it would take, and what it would break
+      description: Determinism, digest stability, the frozen release tags, offline behaviour. If implementing it changes findings that a digest already pins, say so — that is not automatically fatal, but it must be stated.
+    validations:
+      required: false

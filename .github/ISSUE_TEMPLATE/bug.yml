@@ -1,0 +1,84 @@
+name: Bug report
+description: Something a Doctor did not do as its documentation says. Report it in the project that owns the behaviour.
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This repository is the portal for four separate tools. **Do not file component bugs here.**
+        Open the issue in the repository that owns the behaviour:
+
+        | Layer | Tool | Repository |
+        |---|---|---|
+        | Data | Dataset Doctor | https://github.com/xihaian251/dataset-doctor |
+        | Run / code | Experiment Doctor | https://github.com/xihaian251/experiment-doctor |
+        | Reported result | Result Doctor | https://github.com/xihaian251/result-doctor |
+        | Paper claim | Paper Doctor | https://github.com/xihaian251/paper-doctor |
+
+        File here only if the defect is in the portal itself: a dead link, a wrong version number,
+        or documentation that contradicts the released tool.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Which surface is defective
+      description: Choose portal only if the problem is in this repository's own files.
+      options:
+        - portal (README, docs, stack.yaml, verify_stack.py)
+        - dataset-doctor
+        - experiment-doctor
+        - result-doctor
+        - paper-doctor
+      default: 0
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: What you ran, verbatim
+      description: The exact command line and the exact output. Paste the whole thing, including exit code if you checked it.
+      placeholder: |
+        $ paper-doctor audit some.yml
+        ...
+        $ echo $?
+        1
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What the documentation says should happen
+      description: Quote the sentence and give the file or URL. If you cannot find a sentence that predicts the behaviour, say so — "the docs do not cover this" is a valid and useful report.
+    validations:
+      required: true
+  - type: textarea
+    id: inputs
+    attributes:
+      label: Smallest input that reproduces it
+      description: A manifest, a fixture path, or a `git clone` command plus commit. Attached files are better than descriptions of attached files. If the input is private, describe its shape and say that it is private; do not invent a repro.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Output of `pip show <package>` and your OS. Python version matters — the tools declare >=3.11.
+      placeholder: |
+        pip show paper-doctor
+        Name: paper-doctor
+        Version: 0.1.0
+        OS: Windows 11 / Ubuntu 24.04
+    validations:
+      required: true
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Before submitting
+      options:
+        - label: I checked the tool's own `--help` and the released version's source, not only the README
+          required: true
+        - label: I understand a finding of FAIL or INCONCLUSIVE is an audit outcome, not a tool error, and is not a bug
+          required: true
+        - label: I redacted anything private from the pasted input and output
+          required: true
