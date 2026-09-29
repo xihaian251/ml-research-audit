@@ -1,0 +1,26 @@
+# The smallest manifest that produces a decision, not a refusal.
+# Three runs with known values -> the mean -> the number the paper prints.
+schema_version: 1
+project: minimal-two-numbers
+root: .
+
+reported_results:
+  - label: acc/val
+    printed_in: {table: "Table 1", row: Ours, column: Acc, quoted_text: "82.4"}
+    value: {declared: {value: "82.4", by: author, statement: "the paper prints 82.4"}}
+    aggregate: {center: mean}
+    members:
+      - name: seed0
+        value: {observed: {path: runs/seed0/test_acc.txt, line: 1}}
+        identity: {declared: {value: run-seed0, by: author}}
+      - name: seed1
+        value: {observed: {path: runs/seed1/test_acc.txt, line: 1}}
+        identity: {declared: {value: run-seed1, by: author}}
+      - name: seed2
+        value: {observed: {path: runs/seed2/test_acc.txt, line: 1}}
+        identity: {declared: {value: run-seed2, by: author}}
+    member_rule:
+      kind: enumerated
+      declared: {value: "all three seeds", by: author}
+    steps:
+      - {step: format, stage: render, mode: fixed, digits: 1, applied_at: manual}

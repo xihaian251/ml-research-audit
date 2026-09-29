@@ -44,6 +44,14 @@ precisely what the case study shows.
 | Real human first-use test of Paper Doctor | **NOT OBSERVED** |
 | Real human first-use test of the other three | NOT OBSERVED |
 | Agent-driven onboarding simulation | OBSERVED, and it is not the same thing as a human test |
+| Fresh-user proxy audit of this portal | OBSERVED twice, 2026-09-29, in clean environments — see `research/FRESH_USER_AUDIT.md`. Both agents were instructed to use only public documentation; the portal itself was still unpublished at that moment, so neither read the documents under test. The findings that survived re-measurement are documentation fixes, not evidence about humans. |
+
+An agent reading a README cold is a defect-finding instrument, not a user study. It does not carry
+the prior context this project's author unavoidably carries, which is the only reason the run is
+worth anything. It also gets things wrong in ways a human would not: three of its reported defects
+were disproofed by direct measurement before publication
+(`research/COMPONENT_FACTS.md` §7.3). `human_onboarding_observed` stays `false` in `stack.yaml`, and
+no amount of agent onboarding changes that field.
 
 ### The Paper Doctor §15 fact, stated exactly
 
@@ -77,7 +85,19 @@ None of them is a scientific defect; all of them are documentation or metadata d
 | 4 | Dataset Doctor, Experiment Doctor | No `--version` flag. | P3 usability |
 | 5 | All four | No `CITATION.cff`; author metadata disagrees (`冯硕` / `beihai` / unset / unset). | P2 governance |
 | 6 | Experiment Doctor, Result Doctor, Paper Doctor | No `CONTRIBUTING.md`, `SECURITY.md`, or `ROADMAP.md` in the component repositories. | P2 community |
+| 7 | Paper Doctor | `README.md:380` prints the cross-layer bridge as `result-doctor audit <run-dir> --json > findings.json`. `--json` takes a value, so the command exits `2` and the redirect leaves a **0-byte** `findings.json`. Present identically at tag `v0.1.0` and at `HEAD`, and contradicted by the same README's own line 139, which uses `--json report.json`. | **P1 documentation** — it breaks the only documented path from layer 2 to layer 4 |
+| 8 | Dataset Doctor | Three exit-code surfaces disagree with each other: `audit` on a leaking fixture returns `1`, `audit` on the control returns `0`, and `demo` returns `0` while printing `FORMAL_EVAL_INVALID` for that same leaking fixture. A reader who learns the contract from the demo learns it wrong. | P2 documentation (the behaviour itself is defensible; the discoverability is not) |
+| 9 | Experiment Doctor | `audit --adapter <unknown>` exits `1` with a bare `KeyError` traceback instead of a `2`-class usage error. The message does name the five valid adapters, so it is recoverable. | P3 usability |
 
+Row 3 deserves a correction from this round's own measurements, because "unverified" is now too weak
+a word. Every CLI command quoted in `docs/quickstart.md` and `docs/end-to-end-tabm.md` was executed
+on Windows 10 with Python 3.13 on 2026-09-29, including `result-doctor audit`, `paper-doctor audit`,
+`experiment-doctor audit`, and both Dataset Doctor exit-code branches in row 8. So Windows behaviour
+is **observed and working for those paths** while still being **unverified by CI** — which is a
+different gap: the components' own test suites do not run there, so a future release could regress
+without anything catching it. That is a coverage gap, not a known-bad.
+
+Rows 1, 2, 7 and 9 are the four items that belong in a component release and cannot be fixed here.
 Each is owned by the corresponding component repository. This portal reports them; it does not patch
 them.
 

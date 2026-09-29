@@ -27,6 +27,7 @@ shipped.
 | --- | --- | --- | --- |
 | Paper | claim **C8** — the literal `$16\,281$` at `tables/app-rtdl-datasets.tex:8` | `paper-doctor audit phase3/tabm` | `PD001 PASS`, **`PD003 FAIL`**, `PD007 NOT_APPLICABLE` |
 | Paper | claim **C6** — the literal `$26\,048$` on the same row | same | `PD001 PASS`, `PD003 PASS`, `PD007 NOT_APPLICABLE` |
+| Paper | claim **C2** — `main.tex:884`, a `SCOPE` claim that attributes the number `8` to `A:tab:tabred-datasets` | same | `PD001 PASS` (the link resolves), **`PD006 FAIL`** (the float it resolves to does not print `8`) |
 | Paper | claim **C7** — `main.tex:981`, "…under 15 different random seeds." | same | `PD001 PASS`, `PD002 INCONCLUSIVE`, `PD007 NOT_APPLICABLE` |
 | Result | reported result `tabm/adult-seed3/test-score`; aggregation `agg:adult-seed-mean` | `result-doctor audit phase3/tabm/result-doctor.yml` | `RD002 PASS` on the aggregation; `RD001 NOT_APPLICABLE`, `RD005 NOT_APPLICABLE` on the cell. 14 findings total: 1 `PASS`, 6 `INCONCLUSIVE`, 6 `NOT_APPLICABLE`, 1 `NOT_RUN` |
 | Experiment | run `exp-cade5bdf7f3f4c4a9964dd0154598210` (seed 3) | `experiment-doctor init` / `audit` on a fresh clone at the pinned commit | `ED002 PASS`, `ED003 PASS`; `ED004`, `ED009`, `ED010` `INCONCLUSIVE`; `ED001 NOT_APPLICABLE` |
@@ -35,7 +36,11 @@ shipped.
 The joins between these rows are declarations, not computations. That is what makes them traceable —
 and it is where the interesting failures happen.
 
-## The two `FAIL` findings, stated exactly
+## The `FAIL` findings, stated exactly
+
+Three rules disagreed with declared evidence in this run: two at the paper layer (`PD003`, `PD006`)
+and one at the dataset layer (`DD009`). They are different kinds of disagreement, so they are
+reported separately and never combined.
 
 ### 1. `PD003` on C8 — a number the audit could not address
 
@@ -65,7 +70,33 @@ the question was answerable locally by re-declaring the link. It was left as `FA
 declared link to make a finding disappear is exactly the kind of quiet repair this stack exists to
 prevent.
 
-### 2. `DD009` at the dataset layer — `CRITICAL`, and the paper inherits it
+### 2. `PD006` on C2 — a reference that resolves to the wrong float
+
+Claim C2 (`main.tex:884`, form `SCOPE`) declares one support link, `A:tab:tabred-datasets`, and
+attributes the number `8` to it. The label resolves — Paper Doctor finds the float — but the float it
+resolves to does not print `8`:
+
+```text
+PD006  FAIL  C2
+  reason: the reference resolves to table:5, which does not print 8; it is printed in
+          table:4, table:7, table:9, table:11, table:14, table:15, table:16, table:17
+  measurements: ref_labels [A:tab:tabred-datasets], resolved [-> table 5],
+                carriers [table:4, table:7, table:9, table:11, table:14, table:15, table:16, table:17]
+```
+
+The distinction that makes this a finding rather than a typo is in the measurements. `PD001` on the
+same claim is `PASS`: the link exists, it is declared with basis `AUTHOR_REF_IN_SENTENCE`, and it
+resolves to evidence on file. Traceability is satisfied. What `PD006` tests is different — whether the
+referenced float actually carries the attributed content — and here the content is printed by eight
+*other* floats. The pointer is valid and points at the wrong page.
+
+No reading of the source lets the tool pick which of the eight carriers the author meant, so the
+finding stays a question. Note also that the same rule returned `INCONCLUSIVE` for two other claims
+(`C4`, `C5`) for a different reason: those labels do not resolve to any float at all. `FAIL` means a
+resolved reference disagrees; `INCONCLUSIVE` means the reference could not be followed. Collapsing
+them would lose exactly the information an author would need to answer.
+
+### 3. `DD009` at the dataset layer — `CRITICAL`, and the paper inherits it
 
 Dataset Doctor on the prepared Adult copy — verdict `FORMAL_EVAL_INVALID`, 2 blocking findings out of
 9, 48,842 samples hashed, 21 rules attempted (6 `NOT_RUN`):
@@ -109,7 +140,7 @@ artifact inside `exp/` records the environment a published run executed under.
 
 **It establishes:** four independently released tools can be pointed at one real third-party paper,
 in one dependency graph, and produce findings that name their own evidence; the joins were written
-down by a person and stayed auditable; two genuine inconsistencies and eight gaps survived the whole
+down by a person and stayed auditable; three genuine inconsistencies and eight gaps survived the whole
 pipeline instead of being smoothed into a score.
 
 **It does not establish:** that the TabM results are correct or incorrect; that the stack reproduces
@@ -124,42 +155,74 @@ something. A tool that reported `PASS` there would be lying.
 
 ## Reproducing the trace
 
+The three repositories must sit in a specific relationship to each other, because the acceptance
+manifests resolve their `root:` against the filesystem, not against git. The shipped
+`phase3/tabm/result-doctor.yml` declares `root: ../../../upstream/tabm/paper`, which from
+`paper-doctor/phase3/tabm/` is the **sibling** directory `upstream/tabm/paper`. Cloning TabM
+anywhere else makes step 2 fail with `E_ROOT at root: … is not a directory` before any rule runs.
+This layout was not documented here until 2026-09-29, when a fresh-user run dead-ended exactly there;
+the required tree is:
+
+```text
+<workdir>/
+├── paper-doctor/                  # this repo's component, cloned in step 1
+└── upstream/tabm/                 # yandex-research/tabm at the pinned commit, cloned in step 2
+```
+
 ```bash
+# 0. A clean working directory, so the sibling layout below is unambiguous
+mkdir tabm-trace && cd tabm-trace
+
 # 1. Paper source, pinned by the acceptance input fetcher
-git clone https://github.com/xihaian251/paper-doctor.git && cd paper-doctor
+git clone https://github.com/xihaian251/paper-doctor.git
+cd paper-doctor
 python scripts/fetch_acceptance_inputs.py tabm
 
-# 2. Result Doctor over the TabM bundle
-pip install result-doctor
-result-doctor audit phase3/tabm/result-doctor.yml --json > /tmp/rd-findings.json
+# 2. TabM's own code tree, cloned to where result-doctor.yml's root: points
+cd ..
+git clone https://github.com/yandex-research/tabm.git upstream/tabm
+git -C upstream/tabm checkout 28e47ae301c92ec37787dde1ce923a0793f405b4
 
-# 3. Paper Doctor over the claims, with the RD findings pinned by digest in the manifest
+# 3. Result Doctor over the TabM bundle
+pip install result-doctor
+cd paper-doctor
+result-doctor audit phase3/tabm/result-doctor.yml --json /tmp/rd-findings.json
+# expected: 14 findings - 1 PASS, 6 INCONCLUSIVE, 6 NOT_APPLICABLE, 1 NOT_RUN
+# expected findings digest: c56b62623b39ed9a4c311f8bcc6be6de457c1a0f8a4d34d3da99a4b71c7d2774 (12,392 bytes)
+
+# 4. Paper Doctor over the claims, with the RD findings pinned by digest in the manifest
 pip install paper-doctor
 paper-doctor audit phase3/tabm --json /tmp/pd-findings.json
 # expected findings digest: 08836ccfe17f3e2dc0750b30a2a3ae5e5022a53787cf93c2f085af932dff9aa0
 # expected counts: 32 findings - 10 PASS, 2 FAIL, 5 INCONCLUSIVE, 14 NOT_APPLICABLE, 1 NOT_RUN
 
-# 4. Experiment Doctor: capture the declared surface, then audit it
+# 5. Experiment Doctor: capture the declared surface, then audit it
+#    (run from inside paper-doctor/, as left by step 4)
 pip install experiment-doctor
-git clone https://github.com/yandex-research/tabm.git
-git -C tabm checkout 28e47ae301c92ec37787dde1ce923a0793f405b4
-experiment-doctor init tabm/paper \
+experiment-doctor init ../upstream/tabm/paper \
   --command 'python bin/model.py exp/tabm/adult/0-evaluation/3.toml --force' \
   --seed 3 --config exp/tabm/adult/0-evaluation/3.toml \
-  --dataset <your official adult copies>
-experiment-doctor audit tabm/paper --adapter captured -o /tmp/ed-report
+  --dataset ../adult-prepared
+experiment-doctor audit ../upstream/tabm/paper --adapter captured -o /tmp/ed-report
 
-# 5. Dataset Doctor on your own copy of the Adult preparation
+# 6. Dataset Doctor on your own copy of the Adult preparation
 pip install dataset-doctor-audit
 dataset-doctor-audit audit path/to/adult/prepared
 ```
 
-Step 4 needs the `captured` adapter explicitly: the generic adapter, pointed at the same tree, found
+Steps 1-5 were re-executed end to end on 2026-09-29 in a clean workspace on Windows with Python 3.13
+against the published wheels, and both digests above are the digests those runs emitted. Step 6
+cannot be verified by anyone but you, because the dataset is not vendored — see the note below. Note
+also the deliberate asymmetry in step 5: `experiment-doctor init` **exits 0 with a nonexistent
+`--dataset` path** and records `dataset.fingerprints=UNKNOWN`, so a typo in that argument costs you
+an UNKNOWN field rather than an error message. Read the printed grade line, not the exit code.
+
+Step 5 needs the `captured` adapter explicitly: the generic adapter, pointed at the same tree, found
 **0 runs** and that empty inventory is kept as a separate report in the acceptance directory. That
 difference is the honest state of Experiment Doctor on this project — its useful output here comes
 from a declaration written at capture time, not from discovery.
 
-Step 5 is the one a third party must supply: the acceptance run used a locally prepared Adult copy
+Step 6 is the one a third party must supply: the acceptance run used a locally prepared Adult copy
 identified by fingerprint `ds_05c7465f` (report SHA256
 `c1456a7bf602d4c3b4cda5f316a1fdb9e04ed15b7149ec2eb393046428c82f5f`). No dataset was vendored into any
 repository. If your Adult copy has a different fingerprint, your Dataset Doctor findings are about

@@ -102,9 +102,45 @@ break the build, and a broken build always means the audit did not produce findi
 wire these CLIs to fail on findings unless you have decided that a provenance finding is a build
 error — which is a policy choice about your own pipeline, not a property of the tools.
 
-Dataset Doctor and Experiment Doctor expose no `--version` flag and have their own CLI behaviour;
-Dataset Doctor documents `audit` exiting non-zero on blocking findings, and a stricter `--ci` mode.
-Read the component's own README before scripting it.
+Dataset Doctor is the exception, and it is the one a scripting user is most likely to be bitten by.
+Its `audit` exit code **does** react to findings. Measured 2026-09-29 against the published 0.1.2
+wheel, on a synthetic 300-row split with a planted entity leak (a shared `patient_id` across train
+and test):
+
+| Exit code | Meaning (from the tool's own `--help`, confirmed by reproduction) |
+| --- | --- |
+| `0` | the audit ran and found nothing blocking |
+| `1` | the audit ran **and** returned a blocking finding — the leak case printed `FORMAL_EVAL_INVALID` and exited `1` |
+| `2` | configuration, usage, or I/O error |
+| `3` | internal error |
+| `130` | interrupted |
+
+The reproduction was: 21 rules executed, `1 CRITICAL 0 HIGH 0 MEDIUM 2 LOW 1 INFO`, the critical
+finding being `DD005` entity leakage on `patient_id`, exit code `1`. Dataset Doctor's own flag
+descriptions define the ladder: `--ci` means "fail on medium-and-worse findings", `--strict` means
+"everything `--ci` fails on, plus rules that could not conclude", and `--fail-on` takes
+`never|low|medium|high|…` explicitly.
+
+The asymmetry is deliberate and it is not a defect: `FORMAL_EVAL_INVALID` is a statement that the
+evaluation boundary itself is compromised, which Dataset Doctor treats as a reason to stop a
+pipeline, while Result Doctor's `FAIL` is a question about one number. Both are findings; only one
+of them is wired to the exit code. Experiment Doctor returned `0` on a capture whose audit produced
+20 findings with two rules `INCONCLUSIVE`, and `2` on a path that does not exist; its `--help`
+documents no finding-dependent code. Result Doctor and Paper Doctor keep the same
+`0`-means-"the audit ran" contract.
+
+One measurement trap worth recording, because it produced a wrong answer during this portal's own
+audit: `dataset-doctor-audit audit … | tail -25; echo $?` reports the exit status of `tail`, not of
+the tool. Redirect to a file and read `$?` from the command itself.
+
+A second trap is a design detail rather than a shell artefact: `--json` in Result Doctor and Paper
+Doctor **takes the output filename as its value**. `result-doctor audit m.yml --json > out.json`
+therefore fails with `expected one argument` and exit `2`, and because the shell creates the
+redirect target first, the file it leaves behind is 0 bytes — an empty artifact that looks like a
+successful run until the next tool rejects it. The correct form is `--json out.json`.
+
+Neither Dataset Doctor nor Experiment Doctor exposes a `--version` flag; `pip show` is the version
+authority for all four.
 
 ## 6. What never happens
 

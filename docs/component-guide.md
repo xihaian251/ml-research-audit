@@ -24,7 +24,7 @@ Owns: cross-split and entity leakage, duplicates, target and identifier leakage,
 schema and distribution drift, dataset fingerprinting and diffing, split construction.
 
 Commands measured from `--help`: `init`, `scan`, `audit`, `fingerprint`, `snapshot`, `diff`,
-`report`, `rules`, `demo`, `show`. Rules DD001–DD021.
+`report`, `rules`, `split`, `demo`, `show`. Rules DD001–DD021.
 
 Use it when the evaluation boundary is the question. Do not use it to clean data: it reports and
 fingerprints, and `split` is the only command that writes anything, into a new directory you name.

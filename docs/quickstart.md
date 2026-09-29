@@ -1,8 +1,16 @@
 # Quickstart
 
-Ten minutes, assuming you are a competent ML researcher who has never seen this project. Every
-command below was run and measured on 2026-09-29 with the published packages, on Windows with
-Python 3.13. Nothing here is a plan or an aspiration.
+Assuming you are a competent ML researcher who has never seen this project. Every command below was
+run and measured on 2026-09-29 with the published packages, on Windows with Python 3.13. Nothing here
+is a plan or an aspiration.
+
+**What "quickstart" covers, and what it does not.** Sections 1-3 get you to a real finding from other
+people's fixtures, and two fresh-user audits measured that at roughly 4-6 minutes to a `FAIL` at the
+dataset layer and 10-15 minutes to reach one per layer. What it does not promise is a ten-minute
+audit of *your own* number: Result Doctor and Paper Doctor have no demo, so a first audit of your own
+project means writing a manifest, and that is a schema-reading exercise whose cost has never been
+measured by this project. `examples/minimal-result-manifest/` is the fastest honest route into that,
+and `docs/faq.md` states the cost rather than hiding it.
 
 ## 1. Install all four
 
@@ -10,7 +18,10 @@ Python 3.13. Nothing here is a plan or an aspiration.
 pip install dataset-doctor-audit experiment-doctor result-doctor paper-doctor
 ```
 
-They coexist in one environment; there is no dependency conflict between them.
+They coexist in one environment; there is no dependency conflict between them. Install them into a
+virtual environment you control (`python -m venv .venv`, then activate it) rather than into your
+training environment: these are audit tools, and a stray dependency change in the environment that
+produces your results would be an awkward way to find out.
 
 One naming trap, and it is a real one: **Dataset Doctor's PyPI name is `dataset-doctor-audit`**, not
 `dataset-doctor`. The name `dataset-doctor` on PyPI belongs to an unrelated MIT-licensed data
@@ -66,10 +77,33 @@ mkdir demo && cd demo
 dataset-doctor-audit demo
 ```
 
-This generates small datasets with deliberately planted faults and audits them. Expect a report that
-names the planted cross-split duplicates and conflicting labels, and a verdict line such as
-`FORMAL_EVAL_INVALID`. Exit code 0 — the audit ran; the finding is a scientific statement, not a tool
-error.
+This generates three small datasets with deliberately planted faults and audits each one:
+`leaky_tabular`, `clean_tabular` (a control), and `leaky_images`. Expect a report that names the
+planted cross-split duplicates and conflicting labels, and a verdict line such as
+`FORMAL_EVAL_INVALID`.
+
+Then audit the generated fixtures directly, because that is where the exit-code difference lives:
+
+```bash
+dataset-doctor-audit audit dataset-doctor-demo/leaky_tabular -o rep_leaky; echo $?
+dataset-doctor-audit audit dataset-doctor-demo/clean_tabular -o rep_clean; echo $?
+```
+
+Measured on the published 0.1.2 wheel, both commands above, on the same three fixtures the demo had
+just produced:
+
+| Command | Verdict line | Exit code |
+| --- | --- | --- |
+| `demo` (audits all three fixtures internally) | prints `FORMAL_EVAL_INVALID` for `leaky_tabular` | `0` |
+| `audit …/leaky_tabular` | `FORMAL_EVAL_INVALID 316 samples / 21 rules` | `1` |
+| `audit …/clean_tabular` | `FORMAL_EVAL_SAFE 300 samples / 21 rules` | `0` |
+
+Read that table carefully; it is the sharpest edge in this stack. Dataset Doctor is the one tool
+whose exit code **does** react to findings — `audit` exits `1` when a finding blocks formal
+evaluation, unlike Result Doctor and Paper Doctor which exit `0` whatever they conclude. And `demo`
+exits `0` even though it just audited a leaking dataset, because the demo's job is to show you
+output, not to gate your build. If you script the gate, script `audit`.
+`docs/status-semantics.md` §5 has the full exit-code contract per tool.
 
 ### Experiment Doctor — capture, then audit
 
@@ -95,8 +129,18 @@ The tool records what the declaration establishes and refuses to guess the rest.
 
 ### Result Doctor — audit a shipped example
 
-Result Doctor reads a manifest you declare; there is no built-in demo, so use the one in its
-repository:
+Result Doctor reads a manifest you declare; there is no built-in demo. This portal ships the
+smallest manifest that produces a decision, so you can run it without cloning anything:
+
+```bash
+cd examples/minimal-result-manifest
+result-doctor audit result-doctor.yml            # PASS: 3, FAIL: 0, NOT_APPLICABLE: 2, NOT_RUN: 3
+result-doctor audit result-doctor.noscale.yml    # RD001 FAIL - a scale step is missing from steps
+```
+
+[`examples/minimal-result-manifest/README.md`](../examples/minimal-result-manifest/README.md) walks
+through why the passing run is only three rules out of eight. If you would rather see an example
+authored by the component itself:
 
 ```bash
 git clone --depth 1 -b v0.1.0 https://github.com/xihaian251/result-doctor.git
@@ -140,6 +184,23 @@ the join — which run belongs to which aggregation, which aggregation backs whi
 cell backs which sentence. Paper Doctor can carry a Result Doctor findings file as declared evidence
 by pinning its SHA256 and version in its own manifest; that is the only formal connection between
 the layers, and it is a declaration with a digest, not a live link.
+
+To build that bridge, note the one flag whose shape is easy to get wrong: `--json` takes the output
+path as its **value**.
+
+```bash
+result-doctor audit manifest.yml --json rd-findings.json    # correct
+result-doctor audit manifest.yml --json > rd-findings.json  # usage error, exit 2
+```
+
+The second form is not hypothetical. It is the form printed in the released Paper Doctor README, and
+it fails: `--json` takes the redirect target as nothing at all (it gets no value), `result-doctor`
+exits `2` with `argument --json: expected one argument`, and the shell has already created
+`rd-findings.json` as a 0-byte file. Paper Doctor treats "a digest that does not match the bytes" as
+a `2`-class contract error, so a manifest pinned to that empty artifact fails in the next step with
+what reads like a tampering problem and is actually a shell problem. This portal uses the value form
+everywhere, including in `docs/end-to-end-tabm.md`, and records the upstream README line in
+[`research/COMPONENT_FACTS.md`](../research/COMPONENT_FACTS.md) §4.
 
 `docs/architecture.md` explains why this was chosen. The short version: an inferred link would put
 the tool's guess inside your audit trail, and then nobody could trace who asserted it.

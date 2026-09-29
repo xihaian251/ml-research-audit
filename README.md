@@ -53,18 +53,47 @@ unrelated project. The import package is `dataset_doctor_audit`.
 
 ## Start here
 
+Install into an environment you control, and check what actually landed:
+
 ```bash
+python -m venv .venv
+# Linux / macOS
+source .venv/bin/activate
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+
 pip install dataset-doctor-audit experiment-doctor result-doctor paper-doctor
 
+pip show dataset-doctor-audit experiment-doctor result-doctor paper-doctor | grep -E '^(Name|Version)'
+which dataset-doctor-audit experiment-doctor result-doctor paper-doctor
+```
+
+Those two lines are written for a POSIX shell (bash, zsh, or git-bash). In PowerShell the
+equivalents are `pip show … | Select-String '^(Name|Version)'` and `Get-Command dataset-doctor-audit`.
+
+Use `pip show`, not a README table, as the version authority for what is on your machine. Two of the
+four component READMEs contain a stale install or version line, which
+[STACK_STATUS.md](STACK_STATUS.md) tracks; `--version` is not available on all four, so `pip show` is
+the one method that works everywhere.
+
+Then read each tool's own contract from the installed artifact:
+
+```bash
 dataset-doctor-audit --help
 experiment-doctor  --help
 result-doctor      --help
 paper-doctor       --help
 ```
 
-Ten-minute onboarding: [docs/quickstart.md](docs/quickstart.md). Which tool you actually need:
+Onboarding walkthrough: [docs/quickstart.md](docs/quickstart.md). Which tool you actually need:
 [docs/component-guide.md](docs/component-guide.md). A full four-layer trace of one real number in a
-real published paper: [docs/end-to-end-tabm.md](docs/end-to-end-tabm.md).
+real published paper: [docs/end-to-end-tabm.md](docs/end-to-end-tabm.md). The smallest manifest you
+can copy and run: [examples/minimal-result-manifest/](examples/minimal-result-manifest/README.md).
+
+One timing figure, measured rather than advertised: a fresh agent working only from the public
+documentation reached its first Paper Doctor finding in about 11 minutes across ~41 commands
+([research/FRESH_USER_AUDIT.md](research/FRESH_USER_AUDIT.md)). That is an agent, not a person, and
+no real human first-use test is on record — see the Status table below.
 
 ## What this stack deliberately does not do
 
@@ -73,7 +102,7 @@ to cite the tools or build on them.
 
 | It does not | Because |
 | --- | --- |
-| Produce a global score for a paper, a run, or a dataset | an aggregate number would silently merge unlike evidence |
+| Produce a global score for a paper, a run, or a reported result | an aggregate number would silently merge unlike evidence |
 | Rule a paper true, false, reliable, or unreliable | auditing provenance is not adjudicating scientific truth |
 | Label a finding misconduct or fraud | a `FAIL` is one rule disagreeing with one piece of declared evidence — a question to ask an author, not a verdict |
 | Use a language model as a judge | a probabilistic reader cannot be the authority on whether a number matches a number |
@@ -84,6 +113,16 @@ to cite the tools or build on them.
 `UNKNOWN` and `INCONCLUSIVE` are first-class results here. A tool that says "the evidence on file
 does not decide this" is working correctly. See
 [docs/status-semantics.md](docs/status-semantics.md).
+
+**Where that list stops being uniform across the four tools, said plainly.** Dataset Doctor does
+print one aggregate about a dataset: `FORMAL_EVAL_SAFE`, `FORMAL_EVAL_RISKY`,
+`FORMAL_EVAL_INVALID`, or `INCONCLUSIVE`. It is a word, not a score — it has no arithmetic behind
+it, it is computed only over the rules that could actually run, and the tool's own report wording
+says `SAFE` means "no blocking issue found by the rules that could run". Dataset Doctor is also the
+one tool whose **exit code reacts to findings**: it exits non-zero on a blocking finding, whereas
+Result Doctor and Paper Doctor return `0` whatever the audit concludes. Scripting the four the same
+way is a mistake; [docs/status-semantics.md](docs/status-semantics.md) §5 has the measured per-tool
+contract.
 
 ## Status
 
@@ -120,7 +159,7 @@ most — see [docs/community.md](docs/community.md).
 
 | Read | For |
 | --- | --- |
-| [docs/quickstart.md](docs/quickstart.md) | install, verify, and run one audit per layer in ~10 minutes |
+| [docs/quickstart.md](docs/quickstart.md) | install, verify, and run one audit per layer from shipped fixtures — with the manifest-authoring cost stated, not hidden |
 | [docs/architecture.md](docs/architecture.md) | why four tools and not one, and where each responsibility ends |
 | [docs/component-guide.md](docs/component-guide.md) | which Doctor your situation actually needs |
 | [docs/evidence-model.md](docs/evidence-model.md) | observed vs declared vs derived vs unknown evidence |

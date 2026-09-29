@@ -17,8 +17,14 @@ Nothing here requires a change to a component's scientific behaviour.
   OBSERVED for 0.1.0. This does not become a checkbox; it becomes an observation.
 - **Bug fixes in the owning component.** Where a defect is reported and reproduced. Not preemptively.
 - **Documentation defects already measured and listed in `STACK_STATUS.md` §4** — including the Result
-  Doctor README that says the package is not on PyPI, and the Experiment Doctor help string that says
-  v0.1. Each belongs to its own repository and each needs a release there.
+  Doctor README that says the package is not on PyPI, the Experiment Doctor help string that says
+  v0.1, and the Paper Doctor README line that prints the cross-layer bridge command in a form that
+  cannot work (`--json` with no value plus a shell redirect). Each belongs to its own repository and
+  each needs a release there; the portal has fixed only its own copies.
+- **One usage error worth a clearer message.** `experiment-doctor audit --adapter <typo>` exits `1`
+  with a bare `KeyError` traceback naming the adapters that exist. The behaviour is recoverable and
+  the message is technically correct, so this is polish, not a defect: an unknown adapter name should
+  be a `2`-class usage error. Recorded in `research/COMPONENT_FACTS.md` §7.4.
 
 ## NEXT — only features that external usage justifies
 

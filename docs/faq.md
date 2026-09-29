@@ -12,11 +12,13 @@ different accomplishments and this project does not conflate them.
 ## If a tool says `FAIL`, is the paper wrong?
 
 Not necessarily. `FAIL` means one rule found one inconsistency in the evidence supplied for one
-target. In the TabM case study the paper-layer `FAIL` came from a declared link addressing the
+target. In the TabM case study the two paper-layer `FAIL`s were: a declared link addressing the
 `# Train` column while the claim's literal was the `# Test` figure — a mismatch in the audit's own
-declaration, in a paper whose table is internally consistent. The dataset-layer `FAIL` came from
-identical rows carrying different labels across a split boundary in a widely used public data
-preparation. Both are findings about evidence, and neither is a verdict on a paper.
+declaration, in a paper whose table is internally consistent; and a `SCOPE` claim whose reference
+resolves to a float that does not print the attributed number, while eight other floats do. The
+dataset-layer `FAIL` came from identical rows carrying different labels across a split boundary in a
+widely used public data preparation. All are findings about evidence, and none is a verdict on a
+paper.
 
 ## Why does so much come back `INCONCLUSIVE`?
 
