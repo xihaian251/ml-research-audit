@@ -1,0 +1,103 @@
+name: portal-checks
+
+# The portal holds no code that a user runs. Its failure mode is a stale or self-contradictory
+# statement about four released tools, so this workflow checks exactly that: the metadata file,
+# the invariants that must never flip, the existence of every documented file, and the wording
+# the project refuses to publish. It installs one dependency and takes well under a minute.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Daily re-measurement against PyPI. A version drift here means the census is stale,
+    # not that a component is broken; the script says which and stops short of guessing.
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: portal-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  metadata:
+    name: stack metadata (offline)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install the one dependency
+        run: python -m pip install --upgrade pip "pyyaml>=6"
+
+      - name: Verify stack.yaml, file set, and publication wording
+        run: python scripts/verify_stack.py
+
+      - name: Every YAML in the repository must parse
+        run: |
+          python - <<'PY'
+          import sys, pathlib, yaml
+          bad = []
+          files = sorted(p for d in (".", ".github") for p in pathlib.Path(d).rglob("*.yml"))
+          files += sorted(pathlib.Path(".").glob("*.yaml"))
+          seen = set()
+          for p in files:
+              if p.resolve() in seen:
+                  continue
+              seen.add(p.resolve())
+              try:
+                  data = yaml.safe_load(p.read_text(encoding="utf-8"))
+              except yaml.YAMLError as exc:
+                  bad.append(f"{p}: {exc}")
+                  continue
+              if p.parts[0] == ".github" and "ISSUE_TEMPLATE" in p.parts and p.name != "config.yml":
+                  if not isinstance(data, dict) or "body" not in data or "name" not in data:
+                      bad.append(f"{p}: not a usable issue form (needs name + body)")
+          if bad:
+              print("\n".join(bad), file=sys.stderr)
+              sys.exit(1)
+          print(f"OK: {len(seen)} YAML files parse; issue forms are well-formed.")
+          PY
+
+      - name: Issue forms must offer all four components
+        run: |
+          python - <<'PY'
+          import pathlib, sys, yaml
+          text = "\n".join(p.read_text(encoding="utf-8") for p in pathlib.Path(".github").rglob("*.yml"))
+          missing = [name for name in ("dataset-doctor", "experiment-doctor", "result-doctor", "paper-doctor")
+                     if name not in text]
+          if missing:
+              print(f"routing gap: {missing} never appear in .github/", file=sys.stderr)
+              sys.exit(1)
+          cfg = yaml.safe_load(pathlib.Path(".github/ISSUE_TEMPLATE/config.yml").read_text(encoding="utf-8"))
+          links = {c["url"].split("/")[4] for c in cfg.get("contact_links", []) if "issues" in c["url"]}
+          expected = {"dataset-doctor", "experiment-doctor", "result-doctor", "paper-doctor"}
+          if links != expected:
+              print(f"routing gap: contact_links cover {sorted(links)}, expected {sorted(expected)}", file=sys.stderr)
+              sys.exit(1)
+          print(f"OK: contact links route to {sorted(links)}")
+          PY
+
+  pypi:
+    name: versions still match PyPI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip "pyyaml>=6"
+      - name: Offline gate first, then the live version comparison
+        run: |
+          python scripts/verify_stack.py
+          python scripts/verify_stack.py --online
